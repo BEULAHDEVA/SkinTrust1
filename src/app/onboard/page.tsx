@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import BackgroundVideo from "@/components/BackgroundVideo";
 
 type Step = 1 | 2 | 3;
@@ -163,7 +163,13 @@ function StepBar({ current }: { current: Step }) {
 }
 
 // Animated verification scan line
-function VerificationScreen({ onComplete }: { onComplete: (d: Decision) => void }) {
+function VerificationScreen({ 
+  data, 
+  onComplete 
+}: { 
+  data: { fullName: string; docType: string; idFile: UploadedFile | null; selfieFile: UploadedFile | null };
+  onComplete: (d: Decision, reason?: string) => void 
+}) {
   const checks = [
     { label: "Document authenticity", icon: "🪪", delay: 600 },
     { label: "Biometric matching", icon: "🤳", delay: 1400 },
@@ -173,13 +179,35 @@ function VerificationScreen({ onComplete }: { onComplete: (d: Decision) => void 
   ];
 
   const [done, setDone] = useState<number[]>([]);
+  const hasRun = useRef(false);
+  
+  useEffect(() => {
+    if (hasRun.current) return;
+    hasRun.current = true;
 
-  useState(() => {
     checks.forEach((c, i) => {
       setTimeout(() => setDone((prev) => [...prev, i]), c.delay);
     });
-    setTimeout(() => onComplete("approved"), 4800);
-  });
+
+    setTimeout(() => {
+      const name = data.fullName.toLowerCase();
+      let decision: Decision = "approved";
+      let reason = "All checks passed";
+
+      if (name.includes("fake") || name.includes("fraud") || name.includes("fail") || /\d/.test(name)) {
+        decision = "rejected";
+        reason = "Suspected fraudulent application or invalid name format";
+      } else if (name.includes("review") || name.includes("pending") || name.length < 4) {
+        decision = "pending";
+        reason = "Manual review required due to low confidence score";
+      } else if (data.idFile?.name.toLowerCase().includes("fake") || data.selfieFile?.name.toLowerCase().includes("fake")) {
+        decision = "rejected";
+        reason = "Document authenticity check failed";
+      }
+
+      onComplete(decision, reason);
+    }, 4800);
+  }, [checks, data, onComplete]);
 
   return (
     <div className="flex flex-col items-center gap-8 py-6">
@@ -249,7 +277,7 @@ function VerificationScreen({ onComplete }: { onComplete: (d: Decision) => void 
 }
 
 // Decision result screen
-function DecisionScreen({ decision, name }: { decision: Decision; name: string }) {
+function DecisionScreen({ decision, name, reason }: { decision: Decision; name: string; reason?: string }) {
   const config = {
     approved: {
       icon: "✓",
@@ -298,7 +326,7 @@ function DecisionScreen({ decision, name }: { decision: Decision; name: string }
       details: [
         { label: "Risk Score", value: "91 / 100", color: "text-rose-400" },
         { label: "Decision", value: "Auto-Rejected", color: "text-rose-400" },
-        { label: "Reason", value: "Document mismatch", color: "text-white/60" },
+        { label: "Reason", value: reason || "Document mismatch", color: "text-white/60" },
         { label: "Next Step", value: "Contact support", color: "text-white/60" },
       ],
     },
@@ -378,6 +406,7 @@ function DecisionScreen({ decision, name }: { decision: Decision; name: string }
 export default function OnboardPage() {
   const [step, setStep] = useState<Step>(1);
   const [decision, setDecision] = useState<Decision>(null);
+  const [decisionReason, setDecisionReason] = useState<string>("");
 
   // Step 1 form state
   const [fullName, setFullName] = useState("");
@@ -405,8 +434,9 @@ export default function OnboardPage() {
     setStep(2);
   };
 
-  const handleVerificationComplete = (d: Decision) => {
+  const handleVerificationComplete = (d: Decision, reason?: string) => {
     setDecision(d);
+    if (reason) setDecisionReason(reason);
     setStep(3);
   };
 
@@ -581,14 +611,17 @@ export default function OnboardPage() {
                     Mithra is cross-referencing your identity against global databases
                   </p>
                 </div>
-                <VerificationScreen onComplete={handleVerificationComplete} />
+                <VerificationScreen 
+                  data={{ fullName, docType, idFile, selfieFile }} 
+                  onComplete={handleVerificationComplete} 
+                />
               </div>
             )}
 
             {/* ── Step 3: Decision ── */}
             {step === 3 && decision && (
               <div className="p-7">
-                <DecisionScreen decision={decision} name={fullName} />
+                <DecisionScreen decision={decision} name={fullName} reason={decisionReason} />
               </div>
             )}
           </div>
