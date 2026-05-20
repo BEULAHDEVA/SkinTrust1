@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import BackgroundVideo from "@/components/BackgroundVideo";
 import Navbar from "@/components/Navbar";
 import { useRouter } from "next/navigation";
+import { useRole } from "@/lib/useRole";
 
 type Status = "Verified" | "Pending" | "Rejected";
 type Risk = "Low" | "Medium" | "High";
@@ -39,6 +40,7 @@ const RISK_FILTERS: (Risk | "All")[] = ["All", "Low", "Medium", "High"];
 
 export default function CustomersLogPage() {
   const router = useRouter();
+  const [role] = useRole();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<Status | "All">("All");
   const [riskFilter, setRiskFilter] = useState<Risk | "All">("All");
@@ -126,35 +128,37 @@ export default function CustomersLogPage() {
               {filtered.length} of {allCustomers.length} customers
             </p>
           </div>
-          <Button
-            id="export-report"
-            variant="heroSecondary"
-            onClick={exportToCSV}
-            disabled={exporting || filtered.length === 0}
-            className={`rounded-lg px-4 py-2 self-start md:self-auto flex items-center gap-2 transition-all ${
-              exporting
-                ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
-                : ""
-            }`}
-          >
-            {exporting ? (
-              <>
-                <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 12a9 9 0 1 1-6.219-8.56" strokeLinecap="round" />
-                </svg>
-                Exporting…
-              </>
-            ) : (
-              <>
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                Export CSV
-              </>
-            )}
-          </Button>
+          {role === "admin" && (
+            <Button
+              id="export-report"
+              variant="heroSecondary"
+              onClick={exportToCSV}
+              disabled={exporting || filtered.length === 0}
+              className={`rounded-lg px-4 py-2 self-start md:self-auto flex items-center gap-2 transition-all ${
+                exporting
+                  ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
+                  : ""
+              }`}
+            >
+              {exporting ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56" strokeLinecap="round" />
+                  </svg>
+                  Exporting…
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                  Export CSV
+                </>
+              )}
+            </Button>
+          )}
         </div>
 
         {/* Search + Filters */}
@@ -256,7 +260,7 @@ export default function CustomersLogPage() {
                       className="text-xs font-semibold text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-lg border border-indigo-500/20 hover:bg-indigo-500/20 transition-colors"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      {actionLabel[customer.status]}
+                      {customer.status === "Rejected" && role !== "admin" ? "View File" : actionLabel[customer.status]}
                     </span>
                   </div>
                   <div className="text-white/40 text-xs text-right">{customer.date}</div>

@@ -4,12 +4,15 @@ import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import NotificationPanel from "./NotificationPanel";
+import { useRole } from "@/lib/useRole";
+import { useLanguage, LanguageCode } from "@/lib/useLanguage";
+import { useTranslation } from "@/lib/translations";
 
 const navLinks = [
-  { href: "/", label: "Home" },
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/customers", label: "Customers" },
-  { href: "/agent", label: "AI Agent" },
+  { href: "/", tKey: "nav.home" },
+  { href: "/dashboard", tKey: "nav.dashboard" },
+  { href: "/customers", tKey: "nav.customers" },
+  { href: "/agent", tKey: "nav.agent" },
 ];
 
 interface NavbarProps {
@@ -18,9 +21,18 @@ interface NavbarProps {
 
 export default function Navbar({ variant = "glass" }: NavbarProps) {
   const pathname = usePathname();
+  const [role, setRole] = useRole();
+  const [lang, setLang] = useLanguage();
+  const t = useTranslation(lang);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+
+  // Dynamic navlinks based on role
+  const links = [...navLinks];
+  if (role === "admin") {
+    links.push({ href: "/settings", tKey: "nav.settings" });
+  }
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -58,8 +70,8 @@ export default function Navbar({ variant = "glass" }: NavbarProps) {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => {
-              const isActive = pathname === link.href;
+            {links.map((link) => {
+              const isActive = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href));
               return (
                 <a
                   key={link.href}
@@ -70,7 +82,7 @@ export default function Navbar({ variant = "glass" }: NavbarProps) {
                       : "text-white/70 hover:text-white"
                   }`}
                 >
-                  {link.label}
+                  {t(link.tKey as string)}
                 </a>
               );
             })}
@@ -95,6 +107,38 @@ export default function Navbar({ variant = "glass" }: NavbarProps) {
               </span>
             </button>
 
+            {/* Role Toggler (Demo Only) */}
+            <div className="hidden md:flex items-center bg-white/5 border border-white/10 rounded-full p-0.5">
+              <button
+                onClick={() => setRole("admin")}
+                className={`px-3 py-1.5 rounded-full text-[10px] font-semibold tracking-wider uppercase transition-colors ${
+                  role === "admin" ? "bg-indigo-500 text-white shadow-sm" : "text-white/40 hover:text-white"
+                }`}
+              >
+                Admin
+              </button>
+              <button
+                onClick={() => setRole("support")}
+                className={`px-3 py-1.5 rounded-full text-[10px] font-semibold tracking-wider uppercase transition-colors ${
+                  role === "support" ? "bg-indigo-500 text-white shadow-sm" : "text-white/40 hover:text-white"
+                }`}
+              >
+                Support
+              </button>
+            </div>
+
+            {/* Language Toggler */}
+            <select
+              value={lang}
+              onChange={(e) => setLang(e.target.value as LanguageCode)}
+              className="hidden md:block bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-colors [color-scheme:dark]"
+            >
+              <option value="en-US">English</option>
+              <option value="hi-IN">हिंदी (HI)</option>
+              <option value="kn-IN">ಕನ್ನಡ (KN)</option>
+              <option value="ta-IN">தமிழ் (TA)</option>
+            </select>
+
             {/* Sign In (desktop) */}
             <div className="hidden md:block">
               <a href="/signin">
@@ -102,7 +146,7 @@ export default function Navbar({ variant = "glass" }: NavbarProps) {
                   variant="heroSecondary"
                   className="rounded-full px-4 py-2 text-sm font-semibold"
                 >
-                  Sign In
+                  {t("nav.signin")}
                 </Button>
               </a>
             </div>
@@ -142,8 +186,8 @@ export default function Navbar({ variant = "glass" }: NavbarProps) {
           }`}
         >
           <div className="px-6 pb-5 flex flex-col gap-1 border-t border-white/10">
-            {navLinks.map((link) => {
-              const isActive = pathname === link.href;
+            {links.map((link) => {
+              const isActive = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href));
               return (
                 <a
                   key={link.href}
@@ -154,16 +198,32 @@ export default function Navbar({ variant = "glass" }: NavbarProps) {
                       : "text-white/70 hover:text-white hover:bg-white/5"
                   }`}
                 >
-                  {link.label}
+                  {t(link.tKey as string)}
                 </a>
               );
             })}
+            
+            {/* Mobile Language Selector */}
+            <div className="flex items-center justify-between px-3 py-3 mt-2 border-t border-white/10">
+              <span className="text-sm text-white/70">Language</span>
+              <select
+                value={lang}
+                onChange={(e) => setLang(e.target.value as LanguageCode)}
+                className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/50 [color-scheme:dark]"
+              >
+                <option value="en-US">English</option>
+                <option value="hi-IN">हिंदी</option>
+                <option value="kn-IN">ಕನ್ನಡ</option>
+                <option value="ta-IN">தமிழ்</option>
+              </select>
+            </div>
+
             <a href="/signin" className="mt-2">
               <Button
                 variant="heroSecondary"
                 className="w-full rounded-xl py-3 text-sm font-semibold"
               >
-                Sign In
+                {t("nav.signin")}
               </Button>
             </a>
           </div>

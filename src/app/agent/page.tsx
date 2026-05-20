@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import BackgroundVideo from "@/components/BackgroundVideo";
 import Navbar from "@/components/Navbar";
+import { useLanguage } from "@/lib/useLanguage";
+import { useTranslation } from "@/lib/translations";
 
 type Message = { id: number; text: string; isBot: boolean };
 
@@ -40,11 +42,11 @@ function generateTitle(messages: Message[]): string {
   return text.length > 36 ? text.slice(0, 36).trimEnd() + "…" : text;
 }
 
-function newSession(): ChatSession {
+function newSession(t: (key: string) => string): ChatSession {
   const id = Date.now().toString();
   return {
     id,
-    title: "New conversation",
+    title: t("agent.title"),
     messages: [INITIAL_BOT_MESSAGE(Date.now())],
     createdAt: Date.now(),
     updatedAt: Date.now(),
@@ -84,6 +86,9 @@ function groupByDate(sessions: ChatSession[]) {
 }
 
 export default function AIAgentPage() {
+  const [lang] = useLanguage();
+  const t = useTranslation(lang);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -99,12 +104,13 @@ export default function AIAgentPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUserMessage, setLastUserMessage] = useState<string | null>(null);
+  const [isListening, setIsListening] = useState(false);
 
   // ── Bootstrap from localStorage ──
   useEffect(() => {
     let loaded = loadSessions();
     if (loaded.length === 0) {
-      const first = newSession();
+      const first = newSession(t);
       loaded = [first];
       saveSessions(loaded);
     }
@@ -143,7 +149,7 @@ export default function AIAgentPage() {
 
   // ── New chat ──
   const handleNewChat = () => {
-    const s = newSession();
+    const s = newSession(t);
     setSessions((prev) => {
       const next = [s, ...prev];
       saveSessions(next);
@@ -170,7 +176,7 @@ export default function AIAgentPage() {
     setSessions((prev) => {
       const next = prev.filter((s) => s.id !== id);
       if (next.length === 0) {
-        const fresh = newSession();
+        const fresh = newSession(t);
         saveSessions([fresh]);
         setActiveId(fresh.id);
         return [fresh];
@@ -243,6 +249,48 @@ export default function AIAgentPage() {
     },
     [inputMessage, isLoading, activeId, messages, activeSession, updateSession]
   );
+
+  // ── Speech to Text ──
+  const startListening = () => {
+    if (typeof window === "undefined") return;
+    
+    // @ts-ignore
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setError("Speech recognition is not supported in your browser.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = lang;
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = (event: any) => {
+      setIsListening(false);
+      console.error(event.error);
+    };
+
+    recognition.onresult = (event: any) => {
+      let currentTranscript = "";
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        currentTranscript += event.results[i][0].transcript;
+      }
+      setInputMessage(currentTranscript);
+    };
+
+    try {
+      recognition.start();
+    } catch (e) {
+      console.error(e);
+      setIsListening(false);
+    }
+  };
+
+  // Re-create the dependency array explicitly
+  const handleStartListening = useCallback(startListening, [lang]);
 
   const handleQuickQuestion = (q: string) => handleSendMessage(q);
 
@@ -364,9 +412,9 @@ export default function AIAgentPage() {
 
             {/* Session list */}
             <div className="flex-1 overflow-y-auto px-2 pb-4 flex flex-col gap-1 scrollbar-thin">
-              <SidebarGroup label="Today" items={today} />
-              <SidebarGroup label="Yesterday" items={yesterday} />
-              <SidebarGroup label="Older" items={older} />
+              <SidebarGroup label={t("agent.today")} items={today} />
+              <SidebarGroup label={t("agent.yesterday")} items={yesterday} />
+              <SidebarGroup label={t("agent.older")} items={older} />
             </div>
 
             {/* Sidebar footer */}
@@ -531,9 +579,31 @@ export default function AIAgentPage() {
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   disabled={isLoading}
-                  placeholder="Ask Mithra about customer verification, risk scores, or compliance…"
-                  className="flex-1 bg-transparent border-none focus:outline-none text-white px-4 py-3 placeholder:text-white/30 text-sm disabled:opacity-50"
+                  placeholder={t("agent.placeholder") as string}
+                  className="flex-1 bg-transparent border-none focus:outline-none text-white px-4 py-3 placeholder:text-white/30 text-sm disabled:opacity-50 min-w-[200px]"
                 />
+                
+                {/* Voice Input Button */}
+                <button
+                  type="button"
+                  onClick={handleStartListening}
+                  disabled={isLoading}
+                  className={`flex-shrink-0 p-3 rounded-xl transition-all ${
+                    isListening 
+                      ? "bg-rose-500/20 text-rose-400 animate-pulse border border-rose-500/30" 
+                      : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white border border-transparent"
+                  }`}
+                  aria-label="Start voice input"
+                  title="Speech to text"
+                >
+                  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                    <line x1="12" y1="19" x2="12" y2="23" />
+                    <line x1="8" y1="23" x2="16" y2="23" />
+                  </svg>
+                </button>
+
                 <Button
                   type="submit"
                   variant="heroSecondary"

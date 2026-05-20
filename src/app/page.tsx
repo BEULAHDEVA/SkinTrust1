@@ -4,6 +4,8 @@ import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import BackgroundVideo from "@/components/BackgroundVideo";
 import Navbar from "@/components/Navbar";
+import { useLanguage } from "@/lib/useLanguage";
+import { useTranslation } from "@/lib/translations";
 
 const features = [
   {
@@ -58,6 +60,8 @@ const steps = [
 ];
 
 export default function Home() {
+  const [lang] = useLanguage();
+  const t = useTranslation(lang);
   const containerRef = useRef<HTMLDivElement>(null);
 
   return (
@@ -69,26 +73,24 @@ export default function Home() {
         <Navbar variant="transparent" />
 
         {/* Hero Content */}
-        <div className="flex-1 flex flex-col items-center justify-center px-4 text-center min-h-[90vh]">
-          {/* Pill badge */}
-          <div className="mb-6 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold uppercase tracking-widest">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
-            Identity Verification Platform
+        <div className="relative z-10 flex flex-col items-center justify-center min-h-[85vh] text-center px-4 max-w-4xl mx-auto">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+            </span>
+            {t("hero.badge")}
           </div>
 
-          <h1 className="text-[80px] lg:text-[160px] font-normal leading-[1.02] tracking-[-0.024em] font-general text-white">
-            KYC{" "}
-            <span
-              className="bg-clip-text text-transparent"
-              style={{ backgroundImage: "linear-gradient(to left, #6366f1, #a855f7, #fcd34d)" }}
-            >
-              Mithra
+          <h1 className="text-5xl md:text-7xl font-bold font-['General_Sans'] tracking-tight mb-6 animate-in fade-in slide-in-from-bottom-6 duration-700 delay-100">
+            {t("hero.title1")} <br className="hidden md:block" />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">
+              {t("hero.title2")}
             </span>
           </h1>
-          <p className="text-white/70 text-lg leading-8 max-w-lg mt-3 font-sans">
-            The most powerful identity verification
-            <br />
-            engine ever deployed
+
+          <p className="text-white/60 text-lg md:text-xl max-w-2xl mb-10 leading-relaxed animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
+            {t("hero.subtitle")}
           </p>
           <div className="flex flex-wrap gap-4 justify-center mt-8">
             <a href="/onboard">
@@ -96,7 +98,7 @@ export default function Home() {
                 variant="heroSecondary"
                 className="px-7 py-6 rounded-full text-base font-semibold bg-gradient-to-r from-indigo-600/40 to-purple-600/40 hover:from-indigo-600/60 hover:to-purple-600/60 border-indigo-500/40 shadow-[0_0_30px_rgba(99,102,241,0.2)]"
               >
-                Start Verification
+                {t("hero.btn.verify")}
               </Button>
             </a>
             <a href="/agent">
@@ -104,7 +106,7 @@ export default function Home() {
                 variant="heroSecondary"
                 className="px-7 py-6 rounded-full text-base font-semibold shadow-sm border-foreground/5"
               >
-                Talk to Agent
+                {t("hero.btn.agent")}
               </Button>
             </a>
             <a href="/dashboard">
@@ -112,7 +114,7 @@ export default function Home() {
                 variant="heroSecondary"
                 className="px-7 py-6 rounded-full text-base font-semibold bg-indigo-500/20 hover:bg-indigo-500/30 border-indigo-500/40"
               >
-                View Dashboard
+                {t("hero.btn.dashboard")}
               </Button>
             </a>
           </div>

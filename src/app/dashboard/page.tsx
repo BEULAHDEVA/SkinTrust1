@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import BackgroundVideo from "@/components/BackgroundVideo";
 import Navbar from "@/components/Navbar";
+import GeoMap from "@/components/GeoMap";
+import { useLanguage } from "@/lib/useLanguage";
+import { useTranslation } from "@/lib/translations";
 
 type Range = "7" | "30";
 
@@ -39,6 +42,9 @@ const kpis: Record<Range, { total: string; totalDelta: string; approval: string;
 };
 
 export default function AnalyticsDashboardPage() {
+  const [lang] = useLanguage();
+  const t = useTranslation(lang);
+  
   const [range, setRange] = useState<Range>("7");
   const [animated, setAnimated] = useState(false);
   const [tooltip, setTooltip] = useState<{ index: number; x: number; y: number } | null>(null);
@@ -73,8 +79,8 @@ export default function AnalyticsDashboardPage() {
 
         <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-semibold font-['General_Sans'] tracking-tight">Analytics Dashboard</h1>
-            <p className="text-white/40 text-sm mt-1">Real-time metrics on identity verification throughput and risk.</p>
+            <h1 className="text-2xl md:text-3xl font-semibold font-['General_Sans'] tracking-tight">{t("dash.title")}</h1>
+            <p className="text-white/40 text-sm mt-1">{t("dash.subtitle")}</p>
           </div>
           <div className="flex gap-2">
             <Button
@@ -99,10 +105,10 @@ export default function AnalyticsDashboardPage() {
         {/* KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: "Total Verifications", value: kpi.total, delta: kpi.totalDelta, color: "text-white", deltaColor: "text-emerald-400" },
-            { label: "Auto-Approval Rate", value: kpi.approval, delta: kpi.approvalDelta, color: "text-indigo-400", deltaColor: "text-emerald-400" },
-            { label: "Pending Manual Review", value: String(kpi.pending), delta: kpi.pendingDelta, color: "text-amber-400", deltaColor: "text-amber-400" },
-            { label: "High Risk Flags", value: kpi.highRisk, delta: "Stable", color: "text-rose-400", deltaColor: "text-white/40" },
+            { label: t("dash.kpi.total"), value: kpi.total, delta: kpi.totalDelta, color: "text-white", deltaColor: "text-emerald-400" },
+            { label: t("dash.kpi.auto"), value: kpi.approval, delta: kpi.approvalDelta, color: "text-indigo-400", deltaColor: "text-emerald-400" },
+            { label: t("dash.kpi.pending"), value: String(kpi.pending), delta: kpi.pendingDelta, color: "text-amber-400", deltaColor: "text-amber-400" },
+            { label: t("dash.kpi.risk"), value: kpi.highRisk, delta: "Stable", color: "text-rose-400", deltaColor: "text-white/40" },
           ].map((card) => (
             <div key={card.label} className="liquid-glass rounded-2xl p-5 border border-white/5 flex flex-col gap-2">
               <span className="text-xs font-medium text-white/50">{card.label}</span>
@@ -225,11 +231,25 @@ export default function AnalyticsDashboardPage() {
           </div>
         </div>
 
-        {/* Recent Activity */}
-        <div className="liquid-glass rounded-2xl border border-white/5">
+        {/* Map & Recent Activity Row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          
+          {/* GeoMap Widget */}
+          <div className="liquid-glass rounded-2xl p-6 border border-white/5 flex flex-col gap-4">
+            <div className="flex justify-between items-center">
+              <h3 className="font-semibold text-lg font-['General_Sans']">{t("dash.map.title")}</h3>
+              <span className="text-xs text-white/30 font-mono">Live hotspots</span>
+            </div>
+            <div className="flex-1 min-h-[250px] relative">
+              <GeoMap />
+            </div>
+          </div>
+
+          {/* Recent Activity */}
+          <div className="liquid-glass rounded-2xl border border-white/5 flex flex-col">
           <div className="px-6 py-4 border-b border-white/5 flex justify-between items-center">
-            <h3 className="font-semibold font-['General_Sans']">Recent Activity</h3>
-            <a href="/customers" className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors">View all →</a>
+            <h3 className="font-semibold font-['General_Sans']">{t("dash.recent")}</h3>
+            <a href="/customers" className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors">{t("dash.viewall")}</a>
           </div>
           <div className="divide-y divide-white/5">
             {[
@@ -258,6 +278,7 @@ export default function AnalyticsDashboardPage() {
               </div>
             ))}
           </div>
+        </div>
         </div>
 
       </div>
