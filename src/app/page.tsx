@@ -1,62 +1,216 @@
-import { fetchDashboardData } from "@/lib/api";
-import { ProductCard } from "@/components/ProductCard";
-import { Search } from "lucide-react";
+"use client";
 
-export default async function Home() {
-  const { bestMatches, trending, avoid } = await fetchDashboardData();
+import { useRef } from "react";
+import { Button } from "@/components/ui/button";
+import BackgroundVideo from "@/components/BackgroundVideo";
+import Navbar from "@/components/Navbar";
+
+const features = [
+  {
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        <polyline points="9 12 11 14 15 10" />
+      </svg>
+    ),
+    title: "Real-Time AI Verification",
+    description: "Mithra's neural engine analyzes identity documents, selfies, and behavioral signals in under 2 seconds — 24/7, at any scale.",
+    color: "indigo",
+  },
+  {
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <polyline points="12 6 12 12 16 14" />
+      </svg>
+    ),
+    title: "99.97% Uptime SLA",
+    description: "Mission-critical infrastructure backed by a globally distributed network. Your verification pipeline never goes down.",
+    color: "purple",
+  },
+  {
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+      </svg>
+    ),
+    title: "Compliance-Ready",
+    description: "Built-in KYC/AML compliance for GDPR, FATF, and regional frameworks. Audit trails generated automatically.",
+    color: "yellow",
+  },
+  {
+    icon: (
+      <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      </svg>
+    ),
+    title: "AI Agent Assistance",
+    description: "Ask Mithra anything. Get instant answers about risk scores, customer status, and compliance decisions in plain language.",
+    color: "emerald",
+  },
+];
+
+const steps = [
+  { step: "01", title: "Submit Identity", description: "Customer uploads a government ID and takes a selfie — desktop or mobile, any format." },
+  { step: "02", title: "AI Verification", description: "Mithra cross-references biometrics, document authenticity, liveness detection, and global watchlists." },
+  { step: "03", title: "Instant Decision", description: "86% of cases are auto-approved in < 3 seconds. Edge cases are flagged for human review with full context." },
+];
+
+export default function Home() {
+  const containerRef = useRef<HTMLDivElement>(null);
 
   return (
-    <main className="flex-1 max-w-lg mx-auto w-full px-4 py-8 bg-gray-50 min-h-screen">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 tracking-tight mb-2">SkinTrust</h1>
-        <p className="text-gray-500">Welcome back! Here's what works for your <span className="font-semibold text-skin-lavender bg-purple-50 px-2 py-0.5 rounded-full">Combination / PCOD</span> skin.</p>
-      </header>
+    <main className="relative min-h-screen flex flex-col bg-background text-foreground overflow-x-hidden" ref={containerRef}>
+      <BackgroundVideo />
 
-      <div className="relative mb-8 shadow-sm">
-        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-          <Search className="h-5 w-5 text-gray-400" />
+      <div className="relative z-10 flex flex-col min-h-screen">
+        {/* Navbar */}
+        <Navbar variant="transparent" />
+
+        {/* Hero Content */}
+        <div className="flex-1 flex flex-col items-center justify-center px-4 text-center min-h-[90vh]">
+          {/* Pill badge */}
+          <div className="mb-6 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold uppercase tracking-widest">
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+            Identity Verification Platform
+          </div>
+
+          <h1 className="text-[80px] lg:text-[160px] font-normal leading-[1.02] tracking-[-0.024em] font-general text-white">
+            KYC{" "}
+            <span
+              className="bg-clip-text text-transparent"
+              style={{ backgroundImage: "linear-gradient(to left, #6366f1, #a855f7, #fcd34d)" }}
+            >
+              Mithra
+            </span>
+          </h1>
+          <p className="text-white/70 text-lg leading-8 max-w-lg mt-3 font-sans">
+            The most powerful identity verification
+            <br />
+            engine ever deployed
+          </p>
+          <div className="flex flex-wrap gap-4 justify-center mt-8">
+            <a href="/agent">
+              <Button
+                variant="heroSecondary"
+                className="px-7 py-6 rounded-full text-base font-semibold shadow-sm border-foreground/5"
+              >
+                Talk to Agent
+              </Button>
+            </a>
+            <a href="/dashboard">
+              <Button
+                variant="heroSecondary"
+                className="px-7 py-6 rounded-full text-base font-semibold bg-indigo-500/20 hover:bg-indigo-500/30 border-indigo-500/40"
+              >
+                View Dashboard
+              </Button>
+            </a>
+          </div>
+
+          {/* Scroll indicator */}
+          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-40">
+            <span className="text-xs text-white uppercase tracking-widest">Scroll to explore</span>
+            <div className="w-px h-8 bg-gradient-to-b from-white to-transparent animate-bounce" />
+          </div>
         </div>
-        <input
-          type="text"
-          className="block w-full pl-11 pr-4 py-4 bg-white border-none rounded-2xl text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-skin-lavender text-base shadow-sm"
-          placeholder="Search for a product or brand..."
-        />
+
+        {/* ── How It Works ── */}
+        <div className="relative z-10 bg-[#030014]/80 backdrop-blur-sm border-t border-white/5 px-6 py-20">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-14">
+              <p className="text-indigo-400 text-xs font-semibold uppercase tracking-widest mb-3">How It Works</p>
+              <h2 className="text-3xl md:text-4xl font-semibold font-['General_Sans'] tracking-tight text-white">
+                Verification in three steps
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {steps.map((s, i) => (
+                <div
+                  key={s.step}
+                  className="liquid-glass rounded-2xl p-8 border border-white/5 flex flex-col gap-4 relative overflow-hidden group hover:border-indigo-500/30 transition-all duration-300"
+                >
+                  {/* Large step number watermark */}
+                  <span className="absolute -top-4 -right-2 text-8xl font-black text-white/[0.03] select-none font-['General_Sans']">
+                    {s.step}
+                  </span>
+                  <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-bold text-sm group-hover:bg-indigo-500/30 transition-colors">
+                    {s.step}
+                  </div>
+                  <h3 className="font-semibold text-white text-lg font-['General_Sans']">{s.title}</h3>
+                  <p className="text-white/50 text-sm leading-relaxed">{s.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Features ── */}
+        <div className="relative z-10 px-6 py-20 bg-gradient-to-b from-[#030014]/0 to-[#030014]/90">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-14">
+              <p className="text-purple-400 text-xs font-semibold uppercase tracking-widest mb-3">Features</p>
+              <h2 className="text-3xl md:text-4xl font-semibold font-['General_Sans'] tracking-tight text-white">
+                Built for enterprise-grade KYC
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {features.map((feature) => {
+                const colorMap: Record<string, string> = {
+                  indigo: "from-indigo-500/20 to-indigo-500/5 border-indigo-500/20 text-indigo-400",
+                  purple: "from-purple-500/20 to-purple-500/5 border-purple-500/20 text-purple-400",
+                  yellow: "from-yellow-500/20 to-yellow-500/5 border-yellow-500/20 text-yellow-400",
+                  emerald: "from-emerald-500/20 to-emerald-500/5 border-emerald-500/20 text-emerald-400",
+                };
+                const cls = colorMap[feature.color];
+
+                return (
+                  <div
+                    key={feature.title}
+                    className={`rounded-2xl p-6 border bg-gradient-to-br ${cls} flex gap-5 hover:scale-[1.01] transition-transform duration-200`}
+                  >
+                    <div className={`flex-shrink-0 w-12 h-12 rounded-xl bg-current/10 border border-current/20 flex items-center justify-center ${cls.split(" ").pop()}`}>
+                      {feature.icon}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-white font-['General_Sans'] mb-1">{feature.title}</h3>
+                      <p className="text-white/50 text-sm leading-relaxed">{feature.description}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* ── CTA Banner ── */}
+        <div className="relative z-10 px-6 py-16 border-t border-white/5 bg-[#030014]/90 backdrop-blur-sm">
+          <div className="max-w-3xl mx-auto text-center flex flex-col items-center gap-6">
+            <h2 className="text-3xl md:text-4xl font-semibold font-['General_Sans'] tracking-tight text-white">
+              Ready to eliminate fraud?
+            </h2>
+            <p className="text-white/50 text-base leading-relaxed max-w-lg">
+              Join thousands of fintechs and banks running identity verification on Mithra. Start in minutes — no integration headaches.
+            </p>
+            <a href="/agent">
+              <Button
+                variant="heroSecondary"
+                className="px-8 py-6 rounded-full text-base font-semibold bg-indigo-500/20 hover:bg-indigo-500/30 border-indigo-500/40"
+              >
+                Talk to Mithra →
+              </Button>
+            </a>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="relative z-10 border-t border-white/5 px-6 py-6 text-center text-xs text-white/20">
+          © 2026 KYC Mithra. All rights reserved.
+        </div>
       </div>
-
-      <section className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-900">Best for Your Skin</h2>
-          <span className="text-sm font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">High Matches</span>
-        </div>
-        <div className="flex flex-col gap-4">
-          {bestMatches.map(product => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
-      </section>
-
-      <section className="mb-8">
-        <div className="flex items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-900">Trending Right Now</h2>
-        </div>
-        <div className="flex flex-col gap-4">
-          {trending.map(product => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
-      </section>
-
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-900">Consider Avoiding</h2>
-          <span className="text-sm font-medium text-rose-600 bg-rose-50 px-2 py-1 rounded-lg">High Risk</span>
-        </div>
-        <div className="flex flex-col gap-4">
-          {avoid.map(product => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
-      </section>
     </main>
   );
 }

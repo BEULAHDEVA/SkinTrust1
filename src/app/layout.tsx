@@ -1,15 +1,13 @@
 import type { Metadata } from "next";
-import { Outfit } from "next/font/google";
+import "@fontsource/geist-sans/400.css";
+import "@fontsource/geist-sans/500.css";
+import "@fontsource/geist-sans/600.css";
+import "@fontsource/geist-sans/700.css";
 import "./globals.css";
 
-const outfit = Outfit({
-  variable: "--font-outfit",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  title: "SkinTrust - Know what works for your skin",
-  description: "A personalized skincare decision engine that tells you if a product will work for your unique skin profile.",
+  title: "KYC Mithra",
+  description: "The most powerful identity verification engine ever deployed",
 };
 
 export default function RootLayout({
@@ -18,8 +16,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${outfit.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col font-outfit text-gray-900 bg-white">
+    <html lang="en" className="h-full antialiased">
+      <head>
+        <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet" />
+      </head>
+      <body className="min-h-full flex flex-col bg-background text-foreground">
         {children}
       </body>
     </html>

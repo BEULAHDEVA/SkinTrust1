@@ -1,24 +1,24 @@
 @import "tailwindcss";
 
 @theme {
-  --color-skin-peach: #FADADD;
-  --color-skin-lavender: #E6DEFF;
-  --color-skin-beige: #F5F0E8;
-  --color-skin-green: #D1E8D5;
-  --color-skin-yellow: #FEF3C7;
-  --color-skin-red: #FEE2E2;
-  --radius-xl: 1rem;
+  --font-sans: "Geist Sans", sans-serif;
+  --font-general: "General Sans", sans-serif;
 }
 
 @layer base {
-  :root {
-    --background: #FFFFFF;
-    --foreground: #111827;
+  html, body {
+    background-color: #030014;
+    color: #f1f1f1;
+    font-family: var(--font-sans);
   }
 }
 
-body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.liquid-glass {
+  background: rgba(15, 15, 30, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  position: relative;
+  overflow: hidden;
 }
