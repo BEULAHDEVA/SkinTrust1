@@ -91,6 +91,14 @@ export default function Home() {
             engine ever deployed
           </p>
           <div className="flex flex-wrap gap-4 justify-center mt-8">
+            <a href="/onboard">
+              <Button
+                variant="heroSecondary"
+                className="px-7 py-6 rounded-full text-base font-semibold bg-gradient-to-r from-indigo-600/40 to-purple-600/40 hover:from-indigo-600/60 hover:to-purple-600/60 border-indigo-500/40 shadow-[0_0_30px_rgba(99,102,241,0.2)]"
+              >
+                Start Verification
+              </Button>
+            </a>
             <a href="/agent">
               <Button
                 variant="heroSecondary"
@@ -128,9 +136,10 @@ export default function Home() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {steps.map((s, i) => (
-                <div
+                <a
+                  href="/onboard"
                   key={s.step}
-                  className="liquid-glass rounded-2xl p-8 border border-white/5 flex flex-col gap-4 relative overflow-hidden group hover:border-indigo-500/30 transition-all duration-300"
+                  className="liquid-glass rounded-2xl p-8 border border-white/5 flex flex-col gap-4 relative overflow-hidden group hover:border-indigo-500/30 transition-all duration-300 cursor-pointer"
                 >
                   {/* Large step number watermark */}
                   <span className="absolute -top-4 -right-2 text-8xl font-black text-white/[0.03] select-none font-['General_Sans']">
@@ -141,7 +150,10 @@ export default function Home() {
                   </div>
                   <h3 className="font-semibold text-white text-lg font-['General_Sans']">{s.title}</h3>
                   <p className="text-white/50 text-sm leading-relaxed">{s.description}</p>
-                </div>
+                  <span className="text-xs text-indigo-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                    Try it → 
+                  </span>
+                </a>
               ))}
             </div>
           </div>
