@@ -11,6 +11,7 @@ export const TRANSLATIONS: TranslationsDictionary = {
     "nav.agent": "AI Agent",
     "nav.settings": "Settings",
     "nav.signin": "Sign In",
+    "nav.audit": "Audit Log",
 
     "hero.badge": "Introducing KYC Mithra",
     "hero.title1": "Identity Verification",
@@ -43,6 +44,7 @@ export const TRANSLATIONS: TranslationsDictionary = {
     "nav.agent": "एआई एजेंट",
     "nav.settings": "सेटिंग्स",
     "nav.signin": "साइन इन",
+    "nav.audit": "ऑडिट लॉग",
 
     "hero.badge": "केवाईसी मित्रा का परिचय",
     "hero.title1": "पहचान सत्यापन",
@@ -75,6 +77,7 @@ export const TRANSLATIONS: TranslationsDictionary = {
     "nav.agent": "ಎಐ ಏಜೆಂಟ್",
     "nav.settings": "ಸೆಟ್ಟಿಂಗ್‌ಗಳು",
     "nav.signin": "ಸೈನ್ ಇನ್",
+    "nav.audit": "ಆಡಿಟ್ ಲಾಗ್",
 
     "hero.badge": "KYC ಮಿತ್ರ ಪರಿಚಯ",
     "hero.title1": "ಗುರುತು ಪರಿಶೀಲನೆ",
@@ -107,6 +110,7 @@ export const TRANSLATIONS: TranslationsDictionary = {
     "nav.agent": "AI ஏஜென்ட்",
     "nav.settings": "அமைப்புகள்",
     "nav.signin": "உள்நுழை",
+    "nav.audit": "தணிக்கை பதிவு",
 
     "hero.badge": "KYC மித்ராவை அறிமுகப்படுத்துகிறோம்",
     "hero.title1": "அடையாள சரிபார்ப்பு",

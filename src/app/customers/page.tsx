@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import BackgroundVideo from "@/components/BackgroundVideo";
 import Navbar from "@/components/Navbar";
@@ -20,23 +20,77 @@ interface Customer {
   country: string;
 }
 
-const allCustomers: Customer[] = [
-  { id: "CUS-8921", name: "Alex Mercer", email: "alex.m@example.com", status: "Verified", risk: "Low", date: "2026-05-08", country: "US" },
-  { id: "CUS-8922", name: "Sarah Jenkins", email: "sarah.j@example.com", status: "Pending", risk: "Medium", date: "2026-05-08", country: "GB" },
-  { id: "CUS-8923", name: "Michael Chen", email: "m.chen@example.com", status: "Rejected", risk: "High", date: "2026-05-07", country: "SG" },
-  { id: "CUS-8924", name: "Emma Watson", email: "emma.w@example.com", status: "Verified", risk: "Low", date: "2026-05-07", country: "GB" },
-  { id: "CUS-8925", name: "David Rodriguez", email: "d.rod@example.com", status: "Verified", risk: "Low", date: "2026-05-06", country: "MX" },
-  { id: "CUS-8926", name: "Priya Nair", email: "p.nair@example.com", status: "Pending", risk: "Medium", date: "2026-05-06", country: "IN" },
-  { id: "CUS-8927", name: "James O'Brien", email: "j.obrien@example.com", status: "Verified", risk: "Low", date: "2026-05-05", country: "IE" },
-  { id: "CUS-8928", name: "Lin Wei", email: "lin.wei@example.com", status: "Pending", risk: "High", date: "2026-05-05", country: "CN" },
-  { id: "CUS-8929", name: "Fatima Al-Rashid", email: "f.rashid@example.com", status: "Verified", risk: "Low", date: "2026-05-04", country: "AE" },
-  { id: "CUS-8930", name: "Marco Bianchi", email: "m.bianchi@example.com", status: "Rejected", risk: "High", date: "2026-05-04", country: "IT" },
-  { id: "CUS-8931", name: "Aisha Diallo", email: "a.diallo@example.com", status: "Verified", risk: "Low", date: "2026-05-03", country: "SN" },
-  { id: "CUS-8932", name: "Chen Wei", email: "chen.w@example.com", status: "Pending", risk: "Medium", date: "2026-05-03", country: "TW" },
-];
+interface ApiCustomer {
+  user_id: string;
+  name: string;
+  email: string;
+  address: string;
+  zip_code: string;
+}
 
-const STATUS_FILTERS: (Status | "All")[] = ["All", "Verified", "Pending", "Rejected"];
+interface ApiKycRecord {
+  id: string;
+  user_id: string;
+  kyc_status: string;
+  document_type: string;
+  document_id: string;
+  verified_by: string;
+}
+
+function mapKycStatusToRisk(status: string): Risk {
+  switch (status) {
+    case "Verified":
+      return "Low";
+    case "Pending":
+      return "Medium";
+    case "Rejected":
+      return "High";
+    default:
+      return "Medium";
+  }
+}
+
+function inferCountry(address: string, zip: string): string {
+  if (/london|oxford|baker/i.test(address)) return "GB";
+  if (/singapore|anson/i.test(address)) return "SG";
+  if (/mexico/i.test(address)) return "MX";
+  if (/india|mumbai|delhi|bangalore|chennai/i.test(address)) return "IN";
+  if (/terrace|springfield/i.test(address)) return "US";
+  if (zip.match(/^[A-Z]{1,2}\d/)) return "GB";
+  return "US";
+}
+
+const STATUS_FILTERS: (Status | "All")[] = [
+  "All",
+  "Verified",
+  "Pending",
+  "Rejected",
+];
 const RISK_FILTERS: (Risk | "All")[] = ["All", "Low", "Medium", "High"];
+
+function SkeletonRow() {
+  return (
+    <div className="flex flex-col md:grid md:grid-cols-7 gap-2 md:gap-4 px-4 py-4">
+      <div className="h-4 w-20 bg-white/10 rounded animate-pulse" />
+      <div className="col-span-2 flex flex-col gap-1.5">
+        <div className="h-4 w-32 bg-white/10 rounded animate-pulse" />
+        <div className="h-3 w-44 bg-white/5 rounded animate-pulse" />
+      </div>
+      <div>
+        <div className="h-6 w-16 bg-white/10 rounded-full animate-pulse" />
+      </div>
+      <div>
+        <div className="h-4 w-12 bg-white/10 rounded animate-pulse" />
+      </div>
+      <div>
+        <div className="h-6 w-16 bg-white/10 rounded-lg animate-pulse" />
+      </div>
+      <div className="flex justify-end">
+        <div className="h-4 w-20 bg-white/10 rounded animate-pulse" />
+      </div>
+    </div>
+  );
+}
 
 export default function CustomersLogPage() {
   const router = useRouter();
@@ -46,8 +100,64 @@ export default function CustomersLogPage() {
   const [riskFilter, setRiskFilter] = useState<Risk | "All">("All");
   const [exporting, setExporting] = useState(false);
 
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+      setError(null);
+      try {
+        const [customersRes, kycRes] = await Promise.all([
+          fetch("/api/customers"),
+          fetch("/api/kyc"),
+        ]);
+
+        if (!customersRes.ok || !kycRes.ok) {
+          throw new Error("Failed to fetch data");
+        }
+
+        const apiCustomers: ApiCustomer[] = await customersRes.json();
+        const kycRecords: ApiKycRecord[] = await kycRes.json();
+
+        // Build KYC map by user_id
+        const kycMap = new Map<string, ApiKycRecord>();
+        for (const record of kycRecords) {
+          kycMap.set(record.user_id, record);
+        }
+
+        // Join customer data with KYC records
+        const merged: Customer[] = apiCustomers.map((c) => {
+          const kyc = kycMap.get(c.user_id);
+          const status = (kyc?.kyc_status ?? "Pending") as Status;
+          return {
+            id: c.user_id,
+            name: c.name,
+            email: c.email,
+            status,
+            risk: mapKycStatusToRisk(status),
+            date: new Date().toISOString().slice(0, 10),
+            country: inferCountry(c.address, c.zip_code),
+          };
+        });
+
+        setCustomers(merged);
+      } catch (err) {
+        console.error("Failed to load customer data:", err);
+        setError(
+          "Unable to load customer data. Please check your connection and try again."
+        );
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadData();
+  }, []);
+
   const filtered = useMemo(() => {
-    return allCustomers.filter((c) => {
+    return customers.filter((c) => {
       const q = search.toLowerCase();
       const matchSearch =
         !q ||
@@ -58,12 +168,20 @@ export default function CustomersLogPage() {
       const matchRisk = riskFilter === "All" || c.risk === riskFilter;
       return matchSearch && matchStatus && matchRisk;
     });
-  }, [search, statusFilter, riskFilter]);
+  }, [search, statusFilter, riskFilter, customers]);
 
   const exportToCSV = useCallback(() => {
     setExporting(true);
 
-    const headers = ["Customer ID", "Name", "Email", "Status", "Risk Level", "Country", "Date Added"];
+    const headers = [
+      "Customer ID",
+      "Name",
+      "Email",
+      "Status",
+      "Risk Level",
+      "Country",
+      "Date Added",
+    ];
     const rows = filtered.map((c) => [
       c.id,
       c.name,
@@ -77,7 +195,9 @@ export default function CustomersLogPage() {
     const csvContent = [
       headers.join(","),
       ...rows.map((row) =>
-        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+        row
+          .map((cell) => `"${String(cell).replace(/"/g, '""')}"`)
+          .join(",")
       ),
     ].join("\n");
 
@@ -119,13 +239,16 @@ export default function CustomersLogPage() {
       <Navbar />
 
       <div className="relative z-10 flex-1 flex flex-col p-6 md:p-8 max-w-6xl mx-auto w-full gap-6">
-
         {/* Header */}
         <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-semibold font-['General_Sans'] tracking-tight">Customer Verification Log</h1>
+            <h1 className="text-2xl md:text-3xl font-semibold font-['General_Sans'] tracking-tight">
+              Customer Verification Log
+            </h1>
             <p className="text-white/40 text-sm mt-1">
-              {filtered.length} of {allCustomers.length} customers
+              {loading
+                ? "Loading customers..."
+                : `${filtered.length} of ${customers.length} customers`}
             </p>
           </div>
           {role === "admin" && (
@@ -133,7 +256,7 @@ export default function CustomersLogPage() {
               id="export-report"
               variant="heroSecondary"
               onClick={exportToCSV}
-              disabled={exporting || filtered.length === 0}
+              disabled={exporting || filtered.length === 0 || loading}
               className={`rounded-lg px-4 py-2 self-start md:self-auto flex items-center gap-2 transition-all ${
                 exporting
                   ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
@@ -142,14 +265,31 @@ export default function CustomersLogPage() {
             >
               {exporting ? (
                 <>
-                  <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M21 12a9 9 0 1 1-6.219-8.56" strokeLinecap="round" />
+                  <svg
+                    className="w-4 h-4 animate-spin"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path
+                      d="M21 12a9 9 0 1 1-6.219-8.56"
+                      strokeLinecap="round"
+                    />
                   </svg>
                   Exporting…
                 </>
               ) : (
                 <>
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    className="w-4 h-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                     <polyline points="7 10 12 15 17 10" />
                     <line x1="12" y1="15" x2="12" y2="3" />
@@ -165,8 +305,17 @@ export default function CustomersLogPage() {
         <div className="flex flex-col sm:flex-row gap-3">
           {/* Search */}
           <div className="relative flex-1">
-            <svg viewBox="0 0 24 24" className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+            <svg
+              viewBox="0 0 24 24"
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
             <input
               id="customer-search"
@@ -215,6 +364,32 @@ export default function CustomersLogPage() {
           </div>
         </div>
 
+        {/* Error State */}
+        {error && (
+          <div className="liquid-glass rounded-2xl p-6 border border-rose-500/20 text-center">
+            <svg
+              className="w-10 h-10 text-rose-400 mx-auto mb-3"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <p className="text-rose-300 text-sm font-medium">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-3 text-xs text-indigo-400 hover:text-indigo-300 underline transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         {/* Table */}
         <div className="liquid-glass rounded-2xl w-full border border-white/5 overflow-hidden flex flex-col">
           {/* Table Header */}
@@ -228,7 +403,15 @@ export default function CustomersLogPage() {
           </div>
 
           <div className="flex flex-col overflow-y-auto divide-y divide-white/5">
-            {filtered.length === 0 ? (
+            {loading ? (
+              <>
+                <SkeletonRow />
+                <SkeletonRow />
+                <SkeletonRow />
+                <SkeletonRow />
+                <SkeletonRow />
+              </>
+            ) : filtered.length === 0 ? (
               <div className="py-16 text-center text-white/30 text-sm">
                 No customers match your search or filters.
               </div>
@@ -239,18 +422,28 @@ export default function CustomersLogPage() {
                   className="flex flex-col md:grid md:grid-cols-7 gap-2 md:gap-4 px-4 py-4 hover:bg-white/5 transition-colors cursor-pointer group"
                   onClick={() => router.push(`/customers/${customer.id}`)}
                 >
-                  <div className="font-mono text-xs text-white/50 group-hover:text-indigo-400 transition-colors">{customer.id}</div>
+                  <div className="font-mono text-xs text-white/50 group-hover:text-indigo-400 transition-colors">
+                    {customer.id}
+                  </div>
                   <div className="col-span-2 flex flex-col">
-                    <span className="font-medium text-white text-sm">{customer.name}</span>
-                    <span className="text-xs text-white/40">{customer.email}</span>
+                    <span className="font-medium text-white text-sm">
+                      {customer.name}
+                    </span>
+                    <span className="text-xs text-white/40">
+                      {customer.email}
+                    </span>
                   </div>
                   <div>
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${statusColors[customer.status]}`}>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${statusColors[customer.status]}`}
+                    >
                       {customer.status}
                     </span>
                   </div>
                   <div>
-                    <span className={`inline-flex items-center gap-1.5 text-sm ${riskColors[customer.risk]}`}>
+                    <span
+                      className={`inline-flex items-center gap-1.5 text-sm ${riskColors[customer.risk]}`}
+                    >
                       <div className="w-1.5 h-1.5 rounded-full bg-current" />
                       {customer.risk}
                     </span>
@@ -260,10 +453,14 @@ export default function CustomersLogPage() {
                       className="text-xs font-semibold text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-lg border border-indigo-500/20 hover:bg-indigo-500/20 transition-colors"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      {customer.status === "Rejected" && role !== "admin" ? "View File" : actionLabel[customer.status]}
+                      {customer.status === "Rejected" && role !== "admin"
+                        ? "View File"
+                        : actionLabel[customer.status]}
                     </span>
                   </div>
-                  <div className="text-white/40 text-xs text-right">{customer.date}</div>
+                  <div className="text-white/40 text-xs text-right">
+                    {customer.date}
+                  </div>
                 </div>
               ))
             )}

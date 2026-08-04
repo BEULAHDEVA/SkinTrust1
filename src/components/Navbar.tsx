@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import NotificationPanel from "./NotificationPanel";
 import { useRole } from "@/lib/useRole";
@@ -21,17 +22,36 @@ interface NavbarProps {
 
 export default function Navbar({ variant = "glass" }: NavbarProps) {
   const pathname = usePathname();
+  const { data: session } = useSession();
   const [role, setRole] = useRole();
   const [lang, setLang] = useLanguage();
   const t = useTranslation(lang);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const [roleMenuOpen, setRoleMenuOpen] = useState(false);
+  const roleMenuRef = useRef<HTMLDivElement>(null);
 
   // Dynamic navlinks based on role
-  const links = [...navLinks];
-  if (role === "admin") {
-    links.push({ href: "/settings", tKey: "nav.settings" });
+  const links = [{ href: "/", tKey: "nav.home" }];
+  if (role === "analyst") {
+    links.push({ href: "/customers", tKey: "nav.customers" });
+  } else if (role === "compliance") {
+    links.push(
+      { href: "/dashboard", tKey: "nav.dashboard" },
+      { href: "/customers", tKey: "nav.customers" },
+      { href: "/audit", tKey: "nav.audit" }
+    );
+  } else if (role === "admin") {
+    links.push(
+      { href: "/dashboard", tKey: "nav.dashboard" },
+      { href: "/customers", tKey: "nav.customers" },
+      { href: "/agent", tKey: "nav.agent" },
+      { href: "/audit", tKey: "nav.audit" },
+      { href: "/settings", tKey: "nav.settings" }
+    );
   }
 
   useEffect(() => {
@@ -45,7 +65,27 @@ export default function Navbar({ variant = "glass" }: NavbarProps) {
     setMobileOpen(false);
   }, [pathname]);
 
+  // Close user and role menus on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+      if (roleMenuRef.current && !roleMenuRef.current.contains(e.target as Node)) {
+        setRoleMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const isTransparent = variant === "transparent";
+
+  const userInitial = session?.user?.name
+    ? session.user.name.charAt(0).toUpperCase()
+    : session?.user?.email
+    ? session.user.email.charAt(0).toUpperCase()
+    : "U";
 
   return (
     <>
@@ -107,24 +147,48 @@ export default function Navbar({ variant = "glass" }: NavbarProps) {
               </span>
             </button>
 
-            {/* Role Toggler (Demo Only) */}
-            <div className="hidden md:flex items-center bg-white/5 border border-white/10 rounded-full p-0.5">
+            {/* Role Switcher Dropdown (Demo Only) */}
+            <div className="relative hidden md:block" ref={roleMenuRef}>
               <button
-                onClick={() => setRole("admin")}
-                className={`px-3 py-1.5 rounded-full text-[10px] font-semibold tracking-wider uppercase transition-colors ${
-                  role === "admin" ? "bg-indigo-500 text-white shadow-sm" : "text-white/40 hover:text-white"
-                }`}
+                onClick={() => setRoleMenuOpen(!roleMenuOpen)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-white transition-all shadow-inner"
               >
-                Admin
+                <span className={`w-2 h-2 rounded-full animate-pulse ${
+                  role === "admin" ? "bg-emerald-400 shadow-[0_0_8px_#34d399]" :
+                  role === "compliance" ? "bg-indigo-400 shadow-[0_0_8px_#818cf8]" :
+                  "bg-amber-400 shadow-[0_0_8px_#fbbf24]"
+                }`} />
+                <span className="capitalize">{role}</span>
+                <svg viewBox="0 0 24 24" className={`w-3.5 h-3.5 text-white/40 transition-transform ${roleMenuOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
               </button>
-              <button
-                onClick={() => setRole("support")}
-                className={`px-3 py-1.5 rounded-full text-[10px] font-semibold tracking-wider uppercase transition-colors ${
-                  role === "support" ? "bg-indigo-500 text-white shadow-sm" : "text-white/40 hover:text-white"
-                }`}
-              >
-                Support
-              </button>
+              
+              {roleMenuOpen && (
+                <div className="absolute right-0 top-full mt-2 w-44 rounded-xl bg-[#0a0a1a]/95 backdrop-blur-xl border border-white/10 shadow-2xl overflow-hidden py-1 z-30 animate-in fade-in slide-in-from-top-2 duration-200">
+                  {(["admin", "compliance", "analyst"] as const).map((r) => (
+                    <button
+                      key={r}
+                      onClick={() => {
+                        setRole(r);
+                        setRoleMenuOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-2.5 text-xs font-medium transition-colors flex items-center gap-2.5 ${
+                        role === r 
+                          ? "bg-white/10 text-white" 
+                          : "text-white/60 hover:text-white hover:bg-white/5"
+                      }`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${
+                        r === "admin" ? "bg-emerald-400 shadow-[0_0_6px_#34d399]" :
+                        r === "compliance" ? "bg-indigo-400 shadow-[0_0_6px_#818cf8]" :
+                        "bg-amber-400 shadow-[0_0_6px_#fbbf24]"
+                      }`} />
+                      <span className="capitalize">{r}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Language Toggler */}
@@ -139,16 +203,66 @@ export default function Navbar({ variant = "glass" }: NavbarProps) {
               <option value="ta-IN">தமிழ் (TA)</option>
             </select>
 
-            {/* Sign In (desktop) */}
+            {/* Auth: Sign In / User Menu (desktop) */}
             <div className="hidden md:block">
-              <a href="/signin">
-                <Button
-                  variant="heroSecondary"
-                  className="rounded-full px-4 py-2 text-sm font-semibold"
-                >
-                  {t("nav.signin")}
-                </Button>
-              </a>
+              {session?.user ? (
+                <div className="relative" ref={userMenuRef}>
+                  <button
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="flex items-center gap-2.5 rounded-full px-1.5 py-1.5 hover:bg-white/5 transition-colors"
+                  >
+                    {session.user.image ? (
+                      <img
+                        src={session.user.image}
+                        alt={session.user.name || "User"}
+                        className="w-8 h-8 rounded-full border border-white/20"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center border border-white/20 shadow-[0_0_12px_rgba(99,102,241,0.3)]">
+                        <span className="text-white text-xs font-bold">{userInitial}</span>
+                      </div>
+                    )}
+                    <span className="text-sm text-white/80 font-medium max-w-[120px] truncate">
+                      {session.user.name || session.user.email}
+                    </span>
+                    <svg viewBox="0 0 24 24" className={`w-3.5 h-3.5 text-white/40 transition-transform ${userMenuOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </button>
+
+                  {/* Dropdown */}
+                  {userMenuOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-56 rounded-xl bg-[#0a0a1a]/95 backdrop-blur-xl border border-white/10 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="px-4 py-3 border-b border-white/10">
+                        <p className="text-sm font-medium text-white truncate">{session.user.name || "User"}</p>
+                        <p className="text-xs text-white/40 truncate">{session.user.email}</p>
+                      </div>
+                      <div className="py-1">
+                        <button
+                          onClick={() => signOut({ callbackUrl: "/" })}
+                          className="w-full text-left px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 flex items-center gap-2.5 transition-colors"
+                        >
+                          <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                            <polyline points="16 17 21 12 16 7" />
+                            <line x1="21" y1="12" x2="9" y2="12" />
+                          </svg>
+                          Sign Out
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <a href="/signin">
+                  <Button
+                    variant="heroSecondary"
+                    className="rounded-full px-4 py-2 text-sm font-semibold"
+                  >
+                    {t("nav.signin")}
+                  </Button>
+                </a>
+              )}
             </div>
 
             {/* Hamburger (mobile) */}
@@ -203,6 +317,20 @@ export default function Navbar({ variant = "glass" }: NavbarProps) {
               );
             })}
             
+            {/* Mobile Role Selector */}
+            <div className="flex items-center justify-between px-3 py-3 mt-2 border-t border-white/10">
+              <span className="text-sm text-white/70">Role (Demo)</span>
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value as any)}
+                className="bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-indigo-500/50 [color-scheme:dark]"
+              >
+                <option value="admin">Admin</option>
+                <option value="compliance">Compliance</option>
+                <option value="analyst">Analyst</option>
+              </select>
+            </div>
+
             {/* Mobile Language Selector */}
             <div className="flex items-center justify-between px-3 py-3 mt-2 border-t border-white/10">
               <span className="text-sm text-white/70">Language</span>
@@ -218,14 +346,40 @@ export default function Navbar({ variant = "glass" }: NavbarProps) {
               </select>
             </div>
 
-            <a href="/signin" className="mt-2">
-              <Button
-                variant="heroSecondary"
-                className="w-full rounded-xl py-3 text-sm font-semibold"
-              >
-                {t("nav.signin")}
-              </Button>
-            </a>
+            {/* Mobile Auth */}
+            {session?.user ? (
+              <div className="mt-2 flex flex-col gap-2">
+                <div className="flex items-center gap-3 px-3 py-2">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center border border-white/20">
+                    <span className="text-white text-xs font-bold">{userInitial}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-white font-medium truncate">{session.user.name || "User"}</p>
+                    <p className="text-xs text-white/40 truncate">{session.user.email}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                  className="w-full py-3 px-3 rounded-lg text-sm font-medium text-rose-400 hover:bg-rose-500/10 transition-colors text-left flex items-center gap-2"
+                >
+                  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                  </svg>
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <a href="/signin" className="mt-2">
+                <Button
+                  variant="heroSecondary"
+                  className="w-full rounded-xl py-3 text-sm font-semibold"
+                >
+                  {t("nav.signin")}
+                </Button>
+              </a>
+            )}
           </div>
         </div>
       </div>

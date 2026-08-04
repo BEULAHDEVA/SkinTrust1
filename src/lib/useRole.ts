@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 
-export type Role = "admin" | "support";
+export type Role = "admin" | "compliance" | "analyst";
 
 export function setGlobalRole(role: Role) {
   if (typeof window !== "undefined") {
@@ -17,7 +17,9 @@ export function useRole(): [Role, (r: Role) => void] {
   useEffect(() => {
     const handleStorage = () => {
       const stored = localStorage.getItem("kyc_role") as Role;
-      if (stored) setRole(stored);
+      if (stored && ["admin", "compliance", "analyst"].includes(stored)) {
+        setRole(stored);
+      }
     };
     handleStorage();
     window.addEventListener("role_changed", handleStorage);
@@ -26,3 +28,4 @@ export function useRole(): [Role, (r: Role) => void] {
 
   return [role, setGlobalRole];
 }
+
